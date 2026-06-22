@@ -1,24 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { filterMessages, formatChatText, extractJsonFromText, Message } from "@/app/lib/chatUtils";
 
 const client = new Anthropic();
-
-interface Message {
-  date: string;
-  user: string;
-  message: string;
-}
 
 export async function POST(req: NextRequest) {
   const { messages } = await req.json();
 
-  const filtered = (messages as Message[]).filter(
-    (m) => m.message && !["이모티콘", "사진", "동영상", "파일"].includes(m.message.trim())
-  );
-
-  const chatText = filtered
-    .map((m) => `[${m.date}] ${m.user}: ${m.message}`)
-    .join("\n");
+  const filtered = filterMessages(messages as Message[]);
+  const chatText = formatChatText(filtered);
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
@@ -43,8 +33,7 @@ priority는 high, medium, low 중 하나입니다.`,
   const text = response.content[0].type === "text" ? response.content[0].text : "";
 
   try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const result = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+    const result = extractJsonFromText(text);
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "분석 결과 파싱 실패", raw: text }, { status: 500 });

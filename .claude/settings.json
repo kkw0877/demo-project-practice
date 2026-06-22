@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/tdd-guard.sh",
+            "timeout": 10,
+            "statusMessage": "TDD Guard: 테스트 파일 확인 중..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); if echo \"$f\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then npm test; fi",
+            "timeout": 30,
+            "statusMessage": "테스트 실행 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
